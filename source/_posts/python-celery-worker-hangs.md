@@ -41,3 +41,11 @@ b) celery内部维护的基于pubsub实现的worker相互发现文件描述符
 >* 多次重启redis-server之后, 本地netstat命令也出现了跟线上环境高度一致的CLOSE_WAIT现象
 * worker 正常工作, celery的connection pool在redis-server重启之后新建了connection以继续消费任务
 * worker 在redis-server非正常断开连接之后有对应的timeout日志, 与线上日志不符合
+
+### netstat没有显示出已经关闭的连接
+>* 在本地redis server执行client list, 把connection依次kill掉
+* 在kill pubsub connection的时候会出现worker不能正常工作, 没有后续日志输出的问题
+* 导致此问题的原因是, EventLoop里面的主循环在尝试读取一个被kill掉的connection时候block了
+
+## 修复
+>* 在worker启动的时候, 增加timeout 参数设置: {'broker_transport_options': {'socket_timeout': 30}
