@@ -80,12 +80,12 @@
 
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="http://yoursite.com/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:title" content="KeepGoing">
+<meta property="og:url" content="http://memos.ml/index.html">
+<meta property="og:site_name" content="KeepGoing">
 <meta property="og:locale" content="zh-Hans">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hexo">
+<meta name="twitter:title" content="KeepGoing">
 
 
 
@@ -115,13 +115,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/"/>
+  <link rel="canonical" href="http://memos.ml/"/>
 
 
 
 
 
-  <title>Hexo</title>
+  <title>KeepGoing</title>
   
 
 
@@ -152,7 +152,7 @@
     <div class="custom-logo-site-title">
       <a href="/"  class="brand" rel="start">
         <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Hexo</span>
+        <span class="site-title">KeepGoing</span>
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
@@ -229,7 +229,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/21/python-celery-worker-hangs/">
+    <link itemprop="mainEntityOfPage" href="http://memos.ml/2018/07/21/python-celery-worker-hangs/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Wilder Chen">
@@ -238,7 +238,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
+      <meta itemprop="name" content="KeepGoing">
     </span>
 
     
@@ -341,6 +341,18 @@
 <li>多次重启redis-server之后, 本地netstat命令也出现了跟线上环境高度一致的CLOSE_WAIT现象</li>
 <li>worker 正常工作, celery的connection pool在redis-server重启之后新建了connection以继续消费任务</li>
 <li>worker 在redis-server非正常断开连接之后有对应的timeout日志, 与线上日志不符合</li>
+</ul>
+</blockquote>
+<h3 id="netstat没有显示出已经关闭的连接"><a href="#netstat没有显示出已经关闭的连接" class="headerlink" title="netstat没有显示出已经关闭的连接"></a>netstat没有显示出已经关闭的连接</h3><blockquote>
+<ul>
+<li>在本地redis server执行client list, 把connection依次kill掉</li>
+<li>在kill pubsub connection的时候会出现worker不能正常工作, 没有后续日志输出的问题</li>
+<li>导致此问题的原因是, EventLoop里面的主循环在尝试读取一个被kill掉的connection时候block了</li>
+</ul>
+</blockquote>
+<h2 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h2><blockquote>
+<ul>
+<li>在worker启动的时候, 增加timeout 参数设置: {‘broker_transport_options’: {‘socket_timeout’: 30}</li>
 </ul>
 </blockquote>
 

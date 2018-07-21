@@ -82,16 +82,16 @@
 <meta name="description" content="项目实践过程中, 我们使用celery(with redis, concurrency=1)作为消息队列, 但是在 worker 运行一段时间之后(about 10+hours), worker就会不再接受处理任务。 环境  redis 是云服务商提供的服务, 引擎 2.8, 主从配置 celery worker 运行在云服务商的 k8s 集群的容器上, k8s 版本1.7.8 python 3.">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Python Celery Worker Hangs">
-<meta property="og:url" content="http://yoursite.com/2018/07/21/python-celery-worker-hangs/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:url" content="http://memos.ml/2018/07/21/python-celery-worker-hangs/index.html">
+<meta property="og:site_name" content="KeepGoing">
 <meta property="og:description" content="项目实践过程中, 我们使用celery(with redis, concurrency=1)作为消息队列, 但是在 worker 运行一段时间之后(about 10+hours), worker就会不再接受处理任务。 环境  redis 是云服务商提供的服务, 引擎 2.8, 主从配置 celery worker 运行在云服务商的 k8s 集群的容器上, k8s 版本1.7.8 python 3.">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://yoursite.com/images/20180721-182303.png">
-<meta property="og:updated_time" content="2018-07-21T10:54:06.000Z">
+<meta property="og:image" content="http://memos.ml/images/20180721-182303.png">
+<meta property="og:updated_time" content="2018-07-21T13:52:31.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Python Celery Worker Hangs">
 <meta name="twitter:description" content="项目实践过程中, 我们使用celery(with redis, concurrency=1)作为消息队列, 但是在 worker 运行一段时间之后(about 10+hours), worker就会不再接受处理任务。 环境  redis 是云服务商提供的服务, 引擎 2.8, 主从配置 celery worker 运行在云服务商的 k8s 集群的容器上, k8s 版本1.7.8 python 3.">
-<meta name="twitter:image" content="http://yoursite.com/images/20180721-182303.png">
+<meta name="twitter:image" content="http://memos.ml/images/20180721-182303.png">
 
 
 
@@ -121,13 +121,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/07/21/python-celery-worker-hangs/"/>
+  <link rel="canonical" href="http://memos.ml/2018/07/21/python-celery-worker-hangs/"/>
 
 
 
 
 
-  <title>Python Celery Worker Hangs | Hexo</title>
+  <title>Python Celery Worker Hangs | KeepGoing</title>
   
 
 
@@ -157,7 +157,7 @@
     <div class="custom-logo-site-title">
       <a href="/"  class="brand" rel="start">
         <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Hexo</span>
+        <span class="site-title">KeepGoing</span>
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
@@ -234,7 +234,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/21/python-celery-worker-hangs/">
+    <link itemprop="mainEntityOfPage" href="http://memos.ml/2018/07/21/python-celery-worker-hangs/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Wilder Chen">
@@ -243,7 +243,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
+      <meta itemprop="name" content="KeepGoing">
     </span>
 
     
@@ -342,6 +342,18 @@
 <li>多次重启redis-server之后, 本地netstat命令也出现了跟线上环境高度一致的CLOSE_WAIT现象</li>
 <li>worker 正常工作, celery的connection pool在redis-server重启之后新建了connection以继续消费任务</li>
 <li>worker 在redis-server非正常断开连接之后有对应的timeout日志, 与线上日志不符合</li>
+</ul>
+</blockquote>
+<h3 id="netstat没有显示出已经关闭的连接"><a href="#netstat没有显示出已经关闭的连接" class="headerlink" title="netstat没有显示出已经关闭的连接"></a>netstat没有显示出已经关闭的连接</h3><blockquote>
+<ul>
+<li>在本地redis server执行client list, 把connection依次kill掉</li>
+<li>在kill pubsub connection的时候会出现worker不能正常工作, 没有后续日志输出的问题</li>
+<li>导致此问题的原因是, EventLoop里面的主循环在尝试读取一个被kill掉的connection时候block了</li>
+</ul>
+</blockquote>
+<h2 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h2><blockquote>
+<ul>
+<li>在worker启动的时候, 增加timeout 参数设置: {‘broker_transport_options’: {‘socket_timeout’: 30}</li>
 </ul>
 </blockquote>
 
@@ -474,7 +486,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境"><span class="nav-number">1.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#现象"><span class="nav-number">2.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">3.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#celery-浅析"><span class="nav-number">3.1.</span> <span class="nav-text">celery 浅析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#worker-容器现象"><span class="nav-number">3.2.</span> <span class="nav-text">worker 容器现象</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#猜想"><span class="nav-number">4.</span> <span class="nav-text">猜想</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定位"><span class="nav-number">5.</span> <span class="nav-text">定位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#本地配置环境-多次重启redis-server"><span class="nav-number">5.1.</span> <span class="nav-text">本地配置环境, 多次重启redis-server</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境"><span class="nav-number">1.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#现象"><span class="nav-number">2.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">3.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#celery-浅析"><span class="nav-number">3.1.</span> <span class="nav-text">celery 浅析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#worker-容器现象"><span class="nav-number">3.2.</span> <span class="nav-text">worker 容器现象</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#猜想"><span class="nav-number">4.</span> <span class="nav-text">猜想</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定位"><span class="nav-number">5.</span> <span class="nav-text">定位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#本地配置环境-多次重启redis-server"><span class="nav-number">5.1.</span> <span class="nav-text">本地配置环境, 多次重启redis-server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#netstat没有显示出已经关闭的连接"><span class="nav-number">5.2.</span> <span class="nav-text">netstat没有显示出已经关闭的连接</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修复"><span class="nav-number">6.</span> <span class="nav-text">修复</span></a></li></ol></div>
             
 
           </div>
