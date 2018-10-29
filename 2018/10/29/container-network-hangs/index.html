@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="docker,network,celery," />
 
 
 
@@ -79,19 +79,22 @@
 
 
 
-<meta name="description" content="项目实践过程中, 我们使用celery(with redis, concurrency=1)作为消息队列, 但是在 worker 运行一段时间之后(about 10+hours), worker就会不再接受处理任务。 环境  redis 是云服务商提供的服务, 引擎 2.8, 主从配置 celery worker 运行在云服务商的 k8s 集群的容器上, k8s 版本1.7.8 python 3.">
+<meta name="description" content="项目实践过程中，我们用 Celery 解耦邮箱邮件的解读与分析，将其构建成 Docker 镜像以容器的方式运行在公有云的 k8s 的集群中。 环境 python 3.6， celery 4.1.0， kombu 4.1.0， redis 2.10.6 k8s 版本 1.4.6， Docker version 1.12.6， OS ubuntu 1604  现象 Celery beat 正常工作，">
+<meta name="keywords" content="docker,network,celery">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Python Celery Worker Hangs">
-<meta property="og:url" content="http://memos.ml/2018/07/21/python-celery-worker-hangs/index.html">
+<meta property="og:title" content="Container Network Hangs">
+<meta property="og:url" content="http://memos.ml/2018/10/29/container-network-hangs/index.html">
 <meta property="og:site_name" content="KeepGoing">
-<meta property="og:description" content="项目实践过程中, 我们使用celery(with redis, concurrency=1)作为消息队列, 但是在 worker 运行一段时间之后(about 10+hours), worker就会不再接受处理任务。 环境  redis 是云服务商提供的服务, 引擎 2.8, 主从配置 celery worker 运行在云服务商的 k8s 集群的容器上, k8s 版本1.7.8 python 3.">
+<meta property="og:description" content="项目实践过程中，我们用 Celery 解耦邮箱邮件的解读与分析，将其构建成 Docker 镜像以容器的方式运行在公有云的 k8s 的集群中。 环境 python 3.6， celery 4.1.0， kombu 4.1.0， redis 2.10.6 k8s 版本 1.4.6， Docker version 1.12.6， OS ubuntu 1604  现象 Celery beat 正常工作，">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://memos.ml/images/20180721-182303.png">
-<meta property="og:updated_time" content="2018-07-21T13:52:31.000Z">
+<meta property="og:image" content="http://memos.ml/images/20181029-224100.png">
+<meta property="og:image" content="http://memos.ml/images/20181029-230100.png">
+<meta property="og:image" content="http://memos.ml/images/20181029-231800.png">
+<meta property="og:updated_time" content="2018-10-29T15:38:35.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Python Celery Worker Hangs">
-<meta name="twitter:description" content="项目实践过程中, 我们使用celery(with redis, concurrency=1)作为消息队列, 但是在 worker 运行一段时间之后(about 10+hours), worker就会不再接受处理任务。 环境  redis 是云服务商提供的服务, 引擎 2.8, 主从配置 celery worker 运行在云服务商的 k8s 集群的容器上, k8s 版本1.7.8 python 3.">
-<meta name="twitter:image" content="http://memos.ml/images/20180721-182303.png">
+<meta name="twitter:title" content="Container Network Hangs">
+<meta name="twitter:description" content="项目实践过程中，我们用 Celery 解耦邮箱邮件的解读与分析，将其构建成 Docker 镜像以容器的方式运行在公有云的 k8s 的集群中。 环境 python 3.6， celery 4.1.0， kombu 4.1.0， redis 2.10.6 k8s 版本 1.4.6， Docker version 1.12.6， OS ubuntu 1604  现象 Celery beat 正常工作，">
+<meta name="twitter:image" content="http://memos.ml/images/20181029-224100.png">
 
 
 
@@ -121,13 +124,13 @@
 
 
 
-  <link rel="canonical" href="http://memos.ml/2018/07/21/python-celery-worker-hangs/"/>
+  <link rel="canonical" href="http://memos.ml/2018/10/29/container-network-hangs/"/>
 
 
 
 
 
-  <title>Python Celery Worker Hangs | KeepGoing</title>
+  <title>Container Network Hangs | KeepGoing</title>
   
 
 
@@ -234,7 +237,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://memos.ml/2018/07/21/python-celery-worker-hangs/">
+    <link itemprop="mainEntityOfPage" href="http://memos.ml/2018/10/29/container-network-hangs/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Wilder Chen">
@@ -251,7 +254,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Python Celery Worker Hangs</h1>
+          <h1 class="post-title" itemprop="name headline">Container Network Hangs</h1>
         
 
         <div class="post-meta">
@@ -263,8 +266,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-21T16:41:37+08:00">
-                2018-07-21
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-10-29T11:34:37+08:00">
+                2018-10-29
               </time>
             
 
@@ -274,6 +277,28 @@
           </span>
 
           
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -282,8 +307,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2018/07/21/python-celery-worker-hangs/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count gitment-comments-count" data-xid="/2018/07/21/python-celery-worker-hangs/" itemprop="commentsCount"></span>
+                <a href="/2018/10/29/container-network-hangs/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count gitment-comments-count" data-xid="/2018/10/29/container-network-hangs/" itemprop="commentsCount"></span>
                 </a>
               </span>
             
@@ -311,61 +336,40 @@
       
 
       
-        <p>项目实践过程中, 我们使用celery(with redis, concurrency=1)作为消息队列, 但是在 worker 运行一段时间之后(about 10+hours), worker就会不再接受处理任务。</p>
-<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><blockquote>
-<ul>
-<li>redis 是云服务商提供的服务, 引擎 2.8, 主从配置</li>
-<li>celery worker 运行在云服务商的 k8s 集群的容器上, k8s 版本1.7.8</li>
-<li>python 3.6, celery 4.1.0, kombu 4.1.0, redis 2.10.6</li>
+        <p>项目实践过程中，我们用 Celery 解耦邮箱邮件的解读与分析，将其构建成 Docker 镜像以容器的方式运行在公有云的 k8s 的集群中。</p>
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
+<li>python 3.6， celery 4.1.0， kombu 4.1.0， redis 2.10.6</li>
+<li>k8s 版本 1.4.6， Docker version 1.12.6， OS ubuntu 1604</li>
 </ul>
-</blockquote>
-<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><blockquote>
-<ul>
-<li>celery worker运行一段时间之后, 不再处理redis中的任务。先前的容器日志没有太大异常，后续不再有日志输出。</li>
-<li>celery beat正常工作，持续往redis中发送任务</li>
-<li>flower监控显示 worker offline</li>
-<li>redis工作正常, 集群中的其他容器服务正常</li>
+<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><ul>
+<li>Celery beat 正常工作， redis 任务持续堆积</li>
+<li>Worker 在某个时间点之后不再消费任务队列的任务， 没有任何错误日志输出</li>
+<li>Redis工作正常， 集群中的其他容器服务正常</li>
 </ul>
-</blockquote>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><h3 id="celery-浅析"><a href="#celery-浅析" class="headerlink" title="celery 浅析"></a>celery 浅析</h3><blockquote>
-<ul>
-<li>celery实现高度依赖于kombu, 在使用redis作为broker/backend的时候, kombu依赖redis实例化</li>
-<li>redis实例化过程中会创建connection pool与redis server通信</li>
-<li>celery启动最后会开启EventLoop循环遍历建立连接的文件描述符, 一旦有读写事件发生则调用相应的代码处理</li>
-<li>EventLoop里面的文件描述符主要由两部分组成:<br>a) 业务层次相关的, 负责监听任务队列的文件描述符;<br>b) celery内部维护的基于pubsub实现的worker相互发现文件描述符</li>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><h3 id="Google-celery-worker-hangs"><a href="#Google-celery-worker-hangs" class="headerlink" title="Google celery worker hangs"></a>Google celery worker hangs</h3><ul>
+<li><a href="https://stackoverflow.com/questions/30272845/celery-worker-hangs-without-any-error" target="_blank" rel="noopener">Celery worker hangs without any error</a></li>
 </ul>
-</blockquote>
-<h3 id="worker-容器现象"><a href="#worker-容器现象" class="headerlink" title="worker 容器现象"></a>worker 容器现象</h3><blockquote>
-<ul>
-<li>netstat -natp<br><img src="/images/20180721-182303.png" alt=""></li>
-<li>无后续日志输出</li>
+<h3 id="netstat-n"><a href="#netstat-n" class="headerlink" title="netstat -n"></a>netstat -n</h3><ul>
+<li><img src="/images/20181029-224100.png" alt=""></li>
+<li>说明: 在容器内执行上述命令， 其中 993 端口是 imap 服务常用连接端口。</li>
 </ul>
-</blockquote>
-<h2 id="猜想"><a href="#猜想" class="headerlink" title="猜想"></a>猜想</h2><blockquote>
-<ul>
-<li>由于某些原因导致redis server把一些connection杀死了</li>
-<li>celery 没有正常处理这些被杀死的connection</li>
+<h3 id="strace-p-pid"><a href="#strace-p-pid" class="headerlink" title="strace -p pid"></a>strace -p pid</h3><ul>
+<li>注意: 因为项目运行的容器非特权容器， strace 等命令无法在容器内执行的。需要到该 pod 被调度到的节点上执行。 查找节点上对应的进程， 详情参考 docker inspect。</li>
+<li>说明: strace结果表明程序阻塞在 “read(22， …” 上， 22 是文件描述符的标示</li>
 </ul>
-</blockquote>
-<h2 id="定位"><a href="#定位" class="headerlink" title="定位"></a>定位</h2><h3 id="本地配置环境-多次重启redis-server"><a href="#本地配置环境-多次重启redis-server" class="headerlink" title="本地配置环境, 多次重启redis-server"></a>本地配置环境, 多次重启redis-server</h3><blockquote>
-<ul>
-<li>多次重启redis-server之后, 本地netstat命令也出现了跟线上环境高度一致的CLOSE_WAIT现象</li>
-<li>worker 正常工作, celery的connection pool在redis-server重启之后新建了connection以继续消费任务</li>
-<li>worker 在redis-server非正常断开连接之后有对应的timeout日志, 与线上日志不符合</li>
+<h3 id="lsof-i"><a href="#lsof-i" class="headerlink" title="lsof -i"></a>lsof -i</h3><ul>
+<li><img src="/images/20181029-230100.png" alt=""></li>
+<li>说明: ID 22 的文件描述符对应打开的连接是 imap 的服务连接。由此推测程序应该是在 read 22 的时候由于没有设置超时时间被阻塞了。此外， 上图中 imap 的服务器为 gmail 的服务器，国内访问存在一定的障碍，可以进一步加强佐证。</li>
 </ul>
-</blockquote>
-<h3 id="netstat没有显示出已经关闭的连接"><a href="#netstat没有显示出已经关闭的连接" class="headerlink" title="netstat没有显示出已经关闭的连接"></a>netstat没有显示出已经关闭的连接</h3><blockquote>
-<ul>
-<li>在本地redis server执行client list, 把connection依次kill掉</li>
-<li>在kill pubsub connection的时候会出现worker不能正常工作, 没有后续日志输出的问题</li>
-<li>导致此问题的原因是, EventLoop里面的主循环在尝试读取一个被kill掉的connection时候block了</li>
+<h2 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h2><h3 id="tcpdump-i-eth0-tcp-w-out-pcap"><a href="#tcpdump-i-eth0-tcp-w-out-pcap" class="headerlink" title="tcpdump -i eth0 tcp -w out.pcap"></a>tcpdump -i eth0 tcp -w out.pcap</h3><ul>
+<li>容器内执行上述抓包命令， 与此同时执行<code>telnet tk-in-f108.1e100.net imaps</code></li>
+<li>把 out.pcap 文件拷贝到本地，用 wireshark 进行分析</li>
+<li><img src="/images/20181029-231800.png" alt=""></li>
+<li>上图表明， 容器与该 google imap server 连接相对不稳定，在握手阶段发生多次重传以及重复的 ack 。进一步加强佐证。</li>
 </ul>
-</blockquote>
-<h2 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h2><blockquote>
-<ul>
-<li>在worker启动的时候, 增加timeout 参数设置: {‘broker_transport_options’: {‘socket_timeout’: 30}</li>
+<h2 id="简单修复"><a href="#简单修复" class="headerlink" title="简单修复"></a>简单修复</h2><ul>
+<li>为了不阻塞其余的任务，在 imap 的 socket 连接中加上 timeout 超时时间限制。</li>
 </ul>
-</blockquote>
 
       
     </div>
@@ -380,6 +384,16 @@
     
 
     <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/docker/" rel="tag"># docker</a>
+          
+            <a href="/tags/network/" rel="tag"># network</a>
+          
+            <a href="/tags/celery/" rel="tag"># celery</a>
+          
+        </div>
       
 
       
@@ -473,7 +487,25 @@
             
 
             
+              
+              
+              <div class="site-state-item site-state-categories">
+                
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">分类</span>
+                
+              </div>
+            
 
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
             
 
           </nav>
@@ -503,7 +535,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境"><span class="nav-number">1.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#现象"><span class="nav-number">2.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">3.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#celery-浅析"><span class="nav-number">3.1.</span> <span class="nav-text">celery 浅析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#worker-容器现象"><span class="nav-number">3.2.</span> <span class="nav-text">worker 容器现象</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#猜想"><span class="nav-number">4.</span> <span class="nav-text">猜想</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定位"><span class="nav-number">5.</span> <span class="nav-text">定位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#本地配置环境-多次重启redis-server"><span class="nav-number">5.1.</span> <span class="nav-text">本地配置环境, 多次重启redis-server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#netstat没有显示出已经关闭的连接"><span class="nav-number">5.2.</span> <span class="nav-text">netstat没有显示出已经关闭的连接</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修复"><span class="nav-number">6.</span> <span class="nav-text">修复</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境"><span class="nav-number">1.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#现象"><span class="nav-number">2.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">3.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Google-celery-worker-hangs"><span class="nav-number">3.1.</span> <span class="nav-text">Google celery worker hangs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#netstat-n"><span class="nav-number">3.2.</span> <span class="nav-text">netstat -n</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#strace-p-pid"><span class="nav-number">3.3.</span> <span class="nav-text">strace -p pid</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lsof-i"><span class="nav-number">3.4.</span> <span class="nav-text">lsof -i</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#验证"><span class="nav-number">4.</span> <span class="nav-text">验证</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tcpdump-i-eth0-tcp-w-out-pcap"><span class="nav-number">4.1.</span> <span class="nav-text">tcpdump -i eth0 tcp -w out.pcap</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#简单修复"><span class="nav-number">5.</span> <span class="nav-text">简单修复</span></a></li></ol></div>
             
 
           </div>
