@@ -28,19 +28,22 @@ tags:
 ### 缓存内容
 * cache key:
 
->
-1. HTTP METHOD (GET/POST...)
-2. HTTP URI (/api)
-2. HTTP HEADER (Host...)
-3. QUERY STRING (page=xxx)
-4. HTTP BODY ({"name": "wilder"})
+> * http method (GET/POST...)
+* http uri (/api)
+* http header (Host...)
+* query string (page=xxx)
+* http body ({"name": "wilder"})
 
-* cache value: http response
+* cache value
 
-* 说明: 按需组织所需要的 cache key (如: HTTP_MEHTOD:HTTP_URI:QS_KEY1=QS_KEY2)并将对应的http response存入到 redis 缓存中。注意⚠️要对cache_key进行排序,不然可能会导致大量缓存击穿以及缓存层被快速占满。 
+> * http response
+
+* 说明: 按需组织所需要的 cache key (如: http_uri:qs_k1=qs_v1)并将对应的http response 写入到 redis 缓存中
+
+* 注意⚠️: 要对cache_key进行排序,不然可能会导致大量缓存击穿以及缓存层被快速占满
 
 ### 失效触发机制
-* 在 kong plugin schema 中定义相关的标志位, 如果该请求满足对应的 "REST" 条件(如: HTTP_METHOD in [POST/DELETE/PATCH/PUT] AND URI = "/api") 则触发对应的失效机制
+* 在 kong plugin schema 中定义相关的标志位, 如果该请求满足对应的 "REST" 条件(如: http_method in [POST/DELETE/PATCH/PUT] AND uri = "/api") 则触发对应的失效机制
 
 * 失效方案设计成在 redis 中删除符合特定 PATTERN 条件的 keys, 该 PATTERN 需要在 plugin schema 中定义
 
@@ -51,7 +54,7 @@ tags:
 ### kong (kong proxy)
 * 以 DaemonSet/Deployment 的方式将 kong proxy 部署到集群的每个节点上。 在 kong proxy 上层挂在指定端口的 NodePort，将该 Service 挂载到 Load Balancer 后端
 
-* 注意⚠️: 如果需要用 Deployment 在每个节点部署一个／一个以上的 Pod，应该需要自定义调度策略的(这里可以思考一下，有什么场景需要在每个节点上都部署一个 proxy)。
+* 注意⚠️: 如果需要用 Deployment 在每个节点部署一个或一个以上的 Pod，应该需要自定义调度策略的 ( 这里可以思考一下，有什么业务场景需要在每个节点上都部署一个 proxy )
 
 ### kong admin
 * 以 Deployment 方式部署 vpc/cluster 内访问的 kong admin 即可, 该 admin 接口提供管理服务/路由／插件等能力。
