@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="cache,kong,ingress,api gateway,kubernetes," />
 
 
 
@@ -79,13 +79,23 @@
 
 
 
-<meta property="og:type" content="website">
-<meta property="og:title" content="KeepGoing">
-<meta property="og:url" content="http://memos.ml/index.html">
+<meta name="description" content="在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。  本示例将基于 Kong CE (https://konghq.">
+<meta name="keywords" content="cache,kong,ingress,api gateway,kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="General Cache Layer Base On Kong">
+<meta property="og:url" content="http://memos.ml/2018/12/22/general-cache-layer/index.html">
 <meta property="og:site_name" content="KeepGoing">
+<meta property="og:description" content="在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。  本示例将基于 Kong CE (https://konghq.">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://memos.ml/images/20181222-144100.png">
+<meta property="og:image" content="http://memos.ml/images/20181222-163500.png">
+<meta property="og:image" content="http://memos.ml/images/20181222-163600.png">
+<meta property="og:image" content="http://memos.ml/images/20181222-164300.png">
+<meta property="og:updated_time" content="2018-12-22T09:02:02.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="KeepGoing">
+<meta name="twitter:title" content="General Cache Layer Base On Kong">
+<meta name="twitter:description" content="在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。  本示例将基于 Kong CE (https://konghq.">
+<meta name="twitter:image" content="http://memos.ml/images/20181222-144100.png">
 
 
 
@@ -115,13 +125,13 @@
 
 
 
-  <link rel="canonical" href="http://memos.ml/"/>
+  <link rel="canonical" href="http://memos.ml/2018/12/22/general-cache-layer/"/>
 
 
 
 
 
-  <title>KeepGoing</title>
+  <title>General Cache Layer Base On Kong | KeepGoing</title>
   
 
 
@@ -140,8 +150,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -214,9 +223,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -246,9 +255,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/22/general-cache-layer/" itemprop="url">General Cache Layer Base On Kong</a></h1>
+          <h1 class="post-title" itemprop="name headline">General Cache Layer Base On Kong</h1>
         
 
         <div class="post-meta">
@@ -296,6 +303,16 @@
 
           
             
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/12/22/general-cache-layer/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count gitment-comments-count" data-xid="/2018/12/22/general-cache-layer/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
           
 
           
@@ -320,9 +337,7 @@
       
 
       
-        
-          
-            <ul>
+        <ul>
 <li><p>在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。</p>
 </li>
 <li><p>本示例将基于 Kong CE (<a href="https://konghq.com/" target="_blank" rel="noopener">https://konghq.com/</a>) 从原理上改造设计一个业务通用的 L7 缓存插件, 参考源于 kong-plugin-response-cache (<a href="https://github.com/wshirey/kong-plugin-response-cache" target="_blank" rel="noopener">https://github.com/wshirey/kong-plugin-response-cache</a>) 。</p>
@@ -407,8 +422,6 @@
 </li>
 </ul>
 
-          
-        
       
     </div>
     
@@ -423,189 +436,44 @@
 
     <footer class="post-footer">
       
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://memos.ml/2018/10/29/container-network-hangs/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Wilder Chen">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="KeepGoing">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/10/29/container-network-hangs/" itemprop="url">Container Network Hangs</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-10-29T11:34:37+08:00">
-                2018-10-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
+        <div class="post-tags">
           
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/技术/" itemprop="url" rel="index">
-                    <span itemprop="name">技术</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
+            <a href="/tags/cache/" rel="tag"># cache</a>
           
-
+            <a href="/tags/kong/" rel="tag"># kong</a>
           
-            
+            <a href="/tags/ingress/" rel="tag"># ingress</a>
           
-
+            <a href="/tags/api-gateway/" rel="tag"># api gateway</a>
           
+            <a href="/tags/kubernetes/" rel="tag"># kubernetes</a>
           
-
-          
-
-          
-
-          
-
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>项目实践过程中，我们用 Celery 解耦邮箱邮件的解读与分析，将其构建成 Docker 镜像以容器的方式运行在公有云的 k8s 的集群中。</p>
-<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
-<li>python 3.6， celery 4.1.0， kombu 4.1.0， redis 2.10.6</li>
-<li>k8s 版本 1.4.6， Docker version 1.12.6， OS ubuntu 1604</li>
-</ul>
-<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><ul>
-<li>Celery beat 正常工作， redis 任务持续堆积</li>
-<li>Worker 在某个时间点之后不再消费任务队列的任务， 没有任何错误日志输出</li>
-<li>Redis工作正常， 集群中的其他容器服务正常</li>
-</ul>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><h3 id="Google-celery-worker-hangs"><a href="#Google-celery-worker-hangs" class="headerlink" title="Google celery worker hangs"></a>Google celery worker hangs</h3><ul>
-<li><a href="https://stackoverflow.com/questions/30272845/celery-worker-hangs-without-any-error" target="_blank" rel="noopener">Celery worker hangs without any error</a></li>
-</ul>
-<h3 id="netstat-n"><a href="#netstat-n" class="headerlink" title="netstat -n"></a>netstat -n</h3><ul>
-<li><img src="/images/20181029-224100.png" alt=""></li>
-<li>说明: 在容器内执行上述命令， 其中 993 端口是 imap 服务常用连接端口。</li>
-</ul>
-<h3 id="strace-p-pid"><a href="#strace-p-pid" class="headerlink" title="strace -p pid"></a>strace -p pid</h3><ul>
-<li>注意: 因为项目运行的容器非特权容器， strace 等命令无法在容器内执行的。需要到该 pod 被调度到的节点上执行。 查找节点上对应的进程， 详情参考 docker inspect。</li>
-<li>说明: strace结果表明程序阻塞在 “read(22， …” 上， 22 是文件描述符的标示</li>
-</ul>
-<h3 id="lsof-i"><a href="#lsof-i" class="headerlink" title="lsof -i"></a>lsof -i</h3><ul>
-<li><img src="/images/20181029-230100.png" alt=""></li>
-<li>说明: ID 22 的文件描述符对应打开的连接是 imap 的服务连接。由此推测程序应该是在 read 22 的时候由于没有设置超时时间被阻塞了。此外， 上图中 imap 的服务器为 gmail 的服务器，国内访问存在一定的障碍，可以进一步加强佐证。</li>
-</ul>
-<h2 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h2><h3 id="tcpdump-i-eth0-tcp-w-out-pcap"><a href="#tcpdump-i-eth0-tcp-w-out-pcap" class="headerlink" title="tcpdump -i eth0 tcp -w out.pcap"></a>tcpdump -i eth0 tcp -w out.pcap</h3><ul>
-<li>容器内执行上述抓包命令， 与此同时执行<code>telnet tk-in-f108.1e100.net imaps</code></li>
-<li>把 out.pcap 文件拷贝到本地，用 wireshark 进行分析</li>
-<li><img src="/images/20181029-231800.png" alt=""></li>
-<li>上图表明， 容器与该 google imap server 连接相对不稳定，在握手阶段发生多次重传以及重复的 ack 。进一步加强佐证。</li>
-</ul>
-<h2 id="简单修复"><a href="#简单修复" class="headerlink" title="简单修复"></a>简单修复</h2><ul>
-<li>为了不阻塞其余的任务，在 imap 的 socket 连接中加上 timeout 超时时间限制。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
       
 
       
       
-        <div class="post-eof"></div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/10/29/container-network-hangs/" rel="next" title="Container Network Hangs">
+                <i class="fa fa-chevron-left"></i> Container Network Hangs
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
       
     </footer>
   </div>
@@ -615,10 +483,11 @@
   </article>
 
 
-    
-  </section>
 
-  
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -626,6 +495,17 @@
 
 
           
+
+  
+    <div class="comments" id="comments">
+      
+        <div id="gitment-container"></div>
+      
+    </div>
+
+  
+
+
 
         </div>
         
@@ -646,8 +526,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -707,6 +596,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#系统结构"><span class="nav-number">1.</span> <span class="nav-text">系统结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缓存层考量点"><span class="nav-number">2.</span> <span class="nav-text">缓存层考量点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存内容"><span class="nav-number">2.1.</span> <span class="nav-text">缓存内容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#失效触发机制"><span class="nav-number">2.2.</span> <span class="nav-text">失效触发机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#部署方案-Base-On-Kubernetes"><span class="nav-number">3.</span> <span class="nav-text">部署方案(Base On Kubernetes)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kong-kong-proxy"><span class="nav-number">3.1.</span> <span class="nav-text">kong (kong proxy)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kong-admin"><span class="nav-number">3.2.</span> <span class="nav-text">kong admin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kong-admin-gui"><span class="nav-number">3.3.</span> <span class="nav-text">kong admin gui</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#效果"><span class="nav-number">4.</span> <span class="nav-text">效果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存击穿效果"><span class="nav-number">4.1.</span> <span class="nav-text">缓存击穿效果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存命中效果"><span class="nav-number">4.2.</span> <span class="nav-text">缓存命中效果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关联接口导致缓存失效说明"><span class="nav-number">4.3.</span> <span class="nav-text">关联接口导致缓存失效说明</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -847,6 +752,10 @@
 
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
@@ -893,6 +802,30 @@
 
     
 
+    
+      <script type="text/javascript">
+      function renderGitment(){
+        var gitment = new Gitmint({
+            id: window.location.pathname, 
+            owner: 'wilderchen',
+            repo: 'wilderchen.github.io',
+            
+            lang: "" || navigator.language || navigator.systemLanguage || navigator.userLanguage,
+            
+            oauth: {
+            
+            
+                client_secret: 'be239c2d12dc7376963863919abdd503a1fc6f8e',
+            
+                client_id: '2383ed302e0e961538a9'
+            }});
+        gitment.render('gitment-container');
+      }
+
+      
+      renderGitment();
+      
+      </script>
     
 
 
