@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="cache,kong,ingress,api gateway,kubernetes," />
+  <meta name="keywords" content="mongodb,cursor," />
 
 
 
@@ -79,23 +79,20 @@
 
 
 
-<meta name="description" content="在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。  本示例将基于 Kong CE (https://konghq.">
-<meta name="keywords" content="cache,kong,ingress,api gateway,kubernetes">
+<meta name="description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: 12345678910111213141516171819202122Cursor not found (namespace: &amp;apos;db_name.collection_name&amp;apos;, id: cursor_id).```，频率大概是 3">
+<meta name="keywords" content="mongodb,cursor">
 <meta property="og:type" content="article">
-<meta property="og:title" content="General Cache Layer Base On Kong">
-<meta property="og:url" content="http://memos.ml/2018/12/22/general-cache-layer/index.html">
+<meta property="og:title" content="Mongodb Cursor Not Found">
+<meta property="og:url" content="http://memos.ml/2019/02/22/mongodb-cursor-not-found/index.html">
 <meta property="og:site_name" content="KeepGoing">
-<meta property="og:description" content="在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。  本示例将基于 Kong CE (https://konghq.">
+<meta property="og:description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: 12345678910111213141516171819202122Cursor not found (namespace: &amp;apos;db_name.collection_name&amp;apos;, id: cursor_id).```，频率大概是 3">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://memos.ml/images/20181222-144100.png">
-<meta property="og:image" content="http://memos.ml/images/20181222-163500.png">
-<meta property="og:image" content="http://memos.ml/images/20181222-163600.png">
-<meta property="og:image" content="http://memos.ml/images/20181222-164300.png">
-<meta property="og:updated_time" content="2018-12-22T09:02:02.000Z">
+<meta property="og:image" content="http://memos.ml/images/20190222-183300.png">
+<meta property="og:updated_time" content="2019-02-22T10:42:57.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="General Cache Layer Base On Kong">
-<meta name="twitter:description" content="在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。  本示例将基于 Kong CE (https://konghq.">
-<meta name="twitter:image" content="http://memos.ml/images/20181222-144100.png">
+<meta name="twitter:title" content="Mongodb Cursor Not Found">
+<meta name="twitter:description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: 12345678910111213141516171819202122Cursor not found (namespace: &amp;apos;db_name.collection_name&amp;apos;, id: cursor_id).```，频率大概是 3">
+<meta name="twitter:image" content="http://memos.ml/images/20190222-183300.png">
 
 
 
@@ -125,13 +122,13 @@
 
 
 
-  <link rel="canonical" href="http://memos.ml/2018/12/22/general-cache-layer/"/>
+  <link rel="canonical" href="http://memos.ml/2019/02/22/mongodb-cursor-not-found/"/>
 
 
 
 
 
-  <title>General Cache Layer Base On Kong | KeepGoing</title>
+  <title>Mongodb Cursor Not Found | KeepGoing</title>
   
 
 
@@ -238,7 +235,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://memos.ml/2018/12/22/general-cache-layer/">
+    <link itemprop="mainEntityOfPage" href="http://memos.ml/2019/02/22/mongodb-cursor-not-found/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Wilder Chen">
@@ -255,7 +252,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">General Cache Layer Base On Kong</h1>
+          <h1 class="post-title" itemprop="name headline">Mongodb Cursor Not Found</h1>
         
 
         <div class="post-meta">
@@ -267,8 +264,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-22T14:41:18+08:00">
-                2018-12-22
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-22T16:48:00+08:00">
+                2019-02-22
               </time>
             
 
@@ -308,8 +305,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2018/12/22/general-cache-layer/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count gitment-comments-count" data-xid="/2018/12/22/general-cache-layer/" itemprop="commentsCount"></span>
+                <a href="/2019/02/22/mongodb-cursor-not-found/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count gitment-comments-count" data-xid="/2019/02/22/mongodb-cursor-not-found/" itemprop="commentsCount"></span>
                 </a>
               </span>
             
@@ -338,88 +335,29 @@
 
       
         <ul>
-<li><p>在接 RESTful api 接口开发实践过程中, 我们常常需要借助一些缓存策略去提高接口的响应速度以提升用户体验。此外，恰当的缓存策略也有利于降低后方数据库承载的压力。当然，缓存维护也是需要一定成本的，在数据更新的时候我们也需要同时使得缓存更新／失效。在设计开发缓存层的时候，我们应尽量减少对业务层的侵入，设计尽可能通用的缓存层。</p>
+<li><p>在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Cursor not found (namespace: &apos;db_name.collection_name&apos;, id: cursor_id).</span><br><span class="line">```，频率大概是 3次/天</span><br><span class="line"></span><br><span class="line">## 依赖信息</span><br><span class="line">* mongodb (cmongo: v3.2), 在腾讯云上以副本集方式部署</span><br><span class="line"></span><br><span class="line">* python 模拟业务代码一份</span><br><span class="line"></span><br><span class="line">## 问题分析</span><br><span class="line">* google 关键词</span><br><span class="line">   - 关键词: mongodb cursor not found</span><br><span class="line">   - link: [Stackoverflow](https://stackoverflow.com/questions/44248108/mongodb-error-getmore-command-failed-cursor-not-found &quot;node.js - MongoDB - Error: getMore command failed: Cursor not found - Stack Overflow&quot;)</span><br><span class="line">   - 概要: 大部分描述是由于 timeout 导致的，timeout 默认时间大概是 10 分钟</span><br><span class="line">   - 现象分析: 由于模拟的业务代码里是 delete 操作而且从数据量上分析，要 cursor 超过 10 分钟的概率非常小，暂时摒弃从 timeout 上分析的路径</span><br><span class="line">   - 附上一个(v 3.6+)相关 Jira 链接 [Jira](https://jira.mongodb.org/browse/SERVER-34810)，大概讲了 cache refresh 导致 cursor 被清掉了, 这个挺靠谱的</span><br><span class="line"></span><br><span class="line">* 下载源码 mongodb (v3.2) 分析</span><br><span class="line">   1. 搜索 &quot;cursor not found&quot; 关键字</span><br><span class="line">      - 找到对应的源码文件在 cluster\_cursor\_manager.cpp 中，由 &quot;cursorNotFoundStatus&quot; 定义。这个错误可以由 killCursor，detachCursor_inlock，checkOutCursor等函数抛出，从该源文件看，该类型错误可能由 集群关闭 / cursor没有注册成功 / cursor处于 kill pending(如: timeout) 等原因状态导致</span><br><span class="line">   2. 由于腾讯云的监控显示在 cursor not found 出现的时候集群状态是正常的， 所以犹豫集群关闭导致的可能性不大</span><br><span class="line">   3. 从 cluster\_cursor\_manager.cpp 中可以看出 cursor 是由 cursor\_manager 管理的, 在 cursor\_manager.cpp 文件中可以找到 timeoutCursors，eraseCursor，invalidateAll 等相关方法</span><br><span class="line">   4. 全局搜索与 cursor\_manager 相关的 invalidateAll 方法，可以在 index\_catalog.cpp 中找到相关的代码</span><br></pre></td></tr></table></figure>
+<p> Status IndexCatalog::_dropIndex(OperationContext<em> txn, IndexCatalogEntry</em> entry) {<br>  // …<br>  // TODO only kill cursors that are actually using the index rather than everything on this<br>  // collection.<br>  if (entry-&gt;isReady(txn)) {</p>
+<pre><code>_collection-&gt;getCursorManager()-&gt;invalidateAll(
+    false, str::stream() &lt;&lt; &quot;index &apos;&quot; &lt;&lt; indexName &lt;&lt; &quot;&apos; dropped&quot;);
+</code></pre><p>  }<br>  // …<br>}<br> <code>`</code></p>
+<ol start="5">
+<li>由上述代码以及注释可以发现如果删除一个 collection 的 index 的话，会同时 invalidateAll cursors，可以尝试通过该手段去验证是否会报 cursor not found 错误</li>
+</ol>
 </li>
-<li><p>本示例将基于 Kong CE (<a href="https://konghq.com/" target="_blank" rel="noopener">https://konghq.com/</a>) 从原理上改造设计一个业务通用的 L7 缓存插件, 参考源于 kong-plugin-response-cache (<a href="https://github.com/wshirey/kong-plugin-response-cache" target="_blank" rel="noopener">https://github.com/wshirey/kong-plugin-response-cache</a>) 。</p>
-</li>
-<li><p>注意⚠️: Kong EE 版本是带 Proxy Cache 的, 具体实现方法不详, 有需要的可以自行体验。</p>
-</li>
-</ul>
-<h2 id="系统结构"><a href="#系统结构" class="headerlink" title="系统结构"></a>系统结构</h2><ul>
-<li><p><img src="/images/20181222-144100.png" alt=""></p>
-</li>
-<li><p>说明: 在系统结构图中我们可以看到，由于 Kong (proxy) 的介入，我们可以把通用服务(如: 缓存/认证/日志等)与业务服务剥离开, 使得服务职责/功能趋向单一化。我们即将改造设计的缓存层也是以插件的形式运行在代理层的。</p>
-</li>
-</ul>
-<h2 id="缓存层考量点"><a href="#缓存层考量点" class="headerlink" title="缓存层考量点"></a>缓存层考量点</h2><h3 id="缓存内容"><a href="#缓存内容" class="headerlink" title="缓存内容"></a>缓存内容</h3><ul>
-<li>cache key:</li>
-</ul>
-<blockquote>
+<li><p>类似的复现方法</p>
 <ul>
-<li>http method (GET/POST…)</li>
-<li>http uri (/api)</li>
-<li>http header (Host…)</li>
-<li>query string (page=xxx)</li>
-<li>http body ({“name”: “wilder”})</li>
+<li>写一段代码获取某 collection 的 curosr, 迭代该 cursor, 并在每次迭代中 sleep 1 秒</li>
+<li>在另外的 session 中开一个 mongo shell，并在其中创建然后删除该 collection 下的 index</li>
+<li>可以发现我们的模拟代码会抛出 cursor not found 的错误</li>
+<li><img src="/images/20190222-183300.png" alt=""></li>
 </ul>
-</blockquote>
-<ul>
-<li>cache value</li>
-</ul>
-<blockquote>
-<ul>
-<li>http response</li>
-</ul>
-</blockquote>
-<ul>
-<li><p>说明: 按需组织所需要的 cache key (如: http_uri:qs_k1=qs_v1)并将对应的http response 写入到 redis 缓存中</p>
-</li>
-<li><p>注意⚠️: 要对cache_key进行排序,不然可能会导致大量缓存击穿以及缓存层被快速占满</p>
 </li>
 </ul>
-<h3 id="失效触发机制"><a href="#失效触发机制" class="headerlink" title="失效触发机制"></a>失效触发机制</h3><ul>
-<li><p>在 kong plugin schema 中定义相关的标志位, 如果该请求满足对应的 “REST” 条件(如: http_method in [POST/DELETE/PATCH/PUT] AND uri = “/api”) 则触发对应的失效机制</p>
-</li>
-<li><p>失效方案设计成在 redis 中删除符合特定 PATTERN 条件的 keys, 该 PATTERN 需要在 plugin schema 中定义</p>
-</li>
-<li><p>在写入缓存的时候, 设置对应的 expire time，超时自动失效</p>
-</li>
-</ul>
-<h2 id="部署方案-Base-On-Kubernetes"><a href="#部署方案-Base-On-Kubernetes" class="headerlink" title="部署方案(Base On Kubernetes)"></a>部署方案(Base On Kubernetes)</h2><h3 id="kong-kong-proxy"><a href="#kong-kong-proxy" class="headerlink" title="kong (kong proxy)"></a>kong (kong proxy)</h3><ul>
-<li><p>以 DaemonSet/Deployment 的方式将 kong proxy 部署到集群的每个节点上。 在 kong proxy 上层挂在指定端口的 NodePort，将该 Service 挂载到 Load Balancer 后端</p>
-</li>
-<li><p>注意⚠️: 如果需要用 Deployment 在每个节点部署一个或一个以上的 Pod，应该需要自定义调度策略的 ( 这里可以思考一下，有什么业务场景需要在每个节点上都部署一个 proxy )</p>
-</li>
-</ul>
-<h3 id="kong-admin"><a href="#kong-admin" class="headerlink" title="kong admin"></a>kong admin</h3><ul>
-<li><p>以 Deployment 方式部署 vpc/cluster 内访问的 kong admin 即可, 该 admin 接口提供管理服务/路由／插件等能力。</p>
-</li>
-<li><p>注意⚠️: 除非本地开发环境，该 admin 接口万不能部署到公网环境上</p>
-</li>
-</ul>
-<h3 id="kong-admin-gui"><a href="#kong-admin-gui" class="headerlink" title="kong admin gui"></a>kong admin gui</h3><ul>
-<li><p>以 Deployment 的方式部署 vpc/cluster 内访问的 pantsel/konga (kong admin gui), 该服务以图形化的形式提供 kong admin  接口管理能力。</p>
-</li>
-<li><p>注意⚠️: 目前版本(DATE: 2018.12.22)只支持 0.14.x 版本的 kong admin, 1.0.0 版本的 kong 有太多的 break changes(如: service schema changed), 所以就目前情况而言，社区版的 GUI 暂不支持 1.0.0 的 kong, 如需要 1.0 的 admin gui, 可以尝试使用 Kong EE</p>
-</li>
-</ul>
-<h2 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h2><h3 id="缓存击穿效果"><a href="#缓存击穿效果" class="headerlink" title="缓存击穿效果"></a>缓存击穿效果</h3><ul>
-<li><p><img src="/images/20181222-163500.png" alt=""></p>
-</li>
-<li><p>说明: 如上所示，缓存击穿的时候首次请求耗时为 5054 ms</p>
-</li>
-</ul>
-<h3 id="缓存命中效果"><a href="#缓存命中效果" class="headerlink" title="缓存命中效果"></a>缓存命中效果</h3><ul>
-<li><p><img src="/images/20181222-163600.png" alt=""></p>
-</li>
-<li><p>说明: 如上所示，缓存命中的时候首次请求耗时为 51 ms</p>
-</li>
-</ul>
-<h3 id="关联接口导致缓存失效说明"><a href="#关联接口导致缓存失效说明" class="headerlink" title="关联接口导致缓存失效说明"></a>关联接口导致缓存失效说明</h3><ul>
-<li><p>该通用缓存的设计可以达到用户在调用特定 api (如: POST /api/xxx) 的时候使得之前产生特定 pattern 的缓存的 key 批量失效。 下图为失效后再次命中缓存的例子, 请注意此次缓存命中中标红的字段 “total” 已经是 23 了:</p>
-</li>
-<li><p><img src="/images/20181222-164300.png" alt=""></p>
-</li>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>虽然能够复现出 cursor not found 的问题，但是跟实际上的日志错误还是有一定差别的，实际的日志错误是带有 namespace 等信息的，但是在我们的复现路径中并不能看见如此信息。</li>
+<li>从代码实现以及注释上看，导致实际的 cursor not found 的原因极可能由于 curosr manager 对 cursor 的 “粗粒度” 管理导致的</li>
+<li>至于最后的解决方案: 可以通过 try catch retry 的方式去对实际业务代码进行相对应的改造修复</li>
 </ul>
 
       
@@ -438,15 +376,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/cache/" rel="tag"># cache</a>
+            <a href="/tags/mongodb/" rel="tag"># mongodb</a>
           
-            <a href="/tags/kong/" rel="tag"># kong</a>
-          
-            <a href="/tags/ingress/" rel="tag"># ingress</a>
-          
-            <a href="/tags/api-gateway/" rel="tag"># api gateway</a>
-          
-            <a href="/tags/kubernetes/" rel="tag"># kubernetes</a>
+            <a href="/tags/cursor/" rel="tag"># cursor</a>
           
         </div>
       
@@ -459,8 +391,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/10/29/container-network-hangs/" rel="next" title="Container Network Hangs">
-                <i class="fa fa-chevron-left"></i> Container Network Hangs
+              <a href="/2018/12/22/general-cache-layer/" rel="next" title="General Cache Layer Base On Kong">
+                <i class="fa fa-chevron-left"></i> General Cache Layer Base On Kong
               </a>
             
           </div>
@@ -468,10 +400,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/02/22/mongodb-cursor-not-found/" rel="prev" title="Mongodb Cursor Not Found">
-                Mongodb Cursor Not Found <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -610,7 +538,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#系统结构"><span class="nav-number">1.</span> <span class="nav-text">系统结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缓存层考量点"><span class="nav-number">2.</span> <span class="nav-text">缓存层考量点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存内容"><span class="nav-number">2.1.</span> <span class="nav-text">缓存内容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#失效触发机制"><span class="nav-number">2.2.</span> <span class="nav-text">失效触发机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#部署方案-Base-On-Kubernetes"><span class="nav-number">3.</span> <span class="nav-text">部署方案(Base On Kubernetes)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kong-kong-proxy"><span class="nav-number">3.1.</span> <span class="nav-text">kong (kong proxy)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kong-admin"><span class="nav-number">3.2.</span> <span class="nav-text">kong admin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kong-admin-gui"><span class="nav-number">3.3.</span> <span class="nav-text">kong admin gui</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#效果"><span class="nav-number">4.</span> <span class="nav-text">效果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存击穿效果"><span class="nav-number">4.1.</span> <span class="nav-text">缓存击穿效果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存命中效果"><span class="nav-number">4.2.</span> <span class="nav-text">缓存命中效果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关联接口导致缓存失效说明"><span class="nav-number">4.3.</span> <span class="nav-text">关联接口导致缓存失效说明</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>

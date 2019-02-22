@@ -229,6 +229,172 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://memos.ml/2019/02/22/mongodb-cursor-not-found/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Wilder Chen">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="KeepGoing">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/22/mongodb-cursor-not-found/" itemprop="url">Mongodb Cursor Not Found</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-22T16:48:00+08:00">
+                2019-02-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技术/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ul>
+<li><p>在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Cursor not found (namespace: &apos;db_name.collection_name&apos;, id: cursor_id).</span><br><span class="line">```，频率大概是 3次/天</span><br><span class="line"></span><br><span class="line">## 依赖信息</span><br><span class="line">* mongodb (cmongo: v3.2), 在腾讯云上以副本集方式部署</span><br><span class="line"></span><br><span class="line">* python 模拟业务代码一份</span><br><span class="line"></span><br><span class="line">## 问题分析</span><br><span class="line">* google 关键词</span><br><span class="line">   - 关键词: mongodb cursor not found</span><br><span class="line">   - link: [Stackoverflow](https://stackoverflow.com/questions/44248108/mongodb-error-getmore-command-failed-cursor-not-found &quot;node.js - MongoDB - Error: getMore command failed: Cursor not found - Stack Overflow&quot;)</span><br><span class="line">   - 概要: 大部分描述是由于 timeout 导致的，timeout 默认时间大概是 10 分钟</span><br><span class="line">   - 现象分析: 由于模拟的业务代码里是 delete 操作而且从数据量上分析，要 cursor 超过 10 分钟的概率非常小，暂时摒弃从 timeout 上分析的路径</span><br><span class="line">   - 附上一个(v 3.6+)相关 Jira 链接 [Jira](https://jira.mongodb.org/browse/SERVER-34810)，大概讲了 cache refresh 导致 cursor 被清掉了, 这个挺靠谱的</span><br><span class="line"></span><br><span class="line">* 下载源码 mongodb (v3.2) 分析</span><br><span class="line">   1. 搜索 &quot;cursor not found&quot; 关键字</span><br><span class="line">      - 找到对应的源码文件在 cluster\_cursor\_manager.cpp 中，由 &quot;cursorNotFoundStatus&quot; 定义。这个错误可以由 killCursor，detachCursor_inlock，checkOutCursor等函数抛出，从该源文件看，该类型错误可能由 集群关闭 / cursor没有注册成功 / cursor处于 kill pending(如: timeout) 等原因状态导致</span><br><span class="line">   2. 由于腾讯云的监控显示在 cursor not found 出现的时候集群状态是正常的， 所以犹豫集群关闭导致的可能性不大</span><br><span class="line">   3. 从 cluster\_cursor\_manager.cpp 中可以看出 cursor 是由 cursor\_manager 管理的, 在 cursor\_manager.cpp 文件中可以找到 timeoutCursors，eraseCursor，invalidateAll 等相关方法</span><br><span class="line">   4. 全局搜索与 cursor\_manager 相关的 invalidateAll 方法，可以在 index\_catalog.cpp 中找到相关的代码</span><br></pre></td></tr></table></figure>
+<p> Status IndexCatalog::_dropIndex(OperationContext<em> txn, IndexCatalogEntry</em> entry) {<br>  // …<br>  // TODO only kill cursors that are actually using the index rather than everything on this<br>  // collection.<br>  if (entry-&gt;isReady(txn)) {</p>
+<pre><code>_collection-&gt;getCursorManager()-&gt;invalidateAll(
+    false, str::stream() &lt;&lt; &quot;index &apos;&quot; &lt;&lt; indexName &lt;&lt; &quot;&apos; dropped&quot;);
+</code></pre><p>  }<br>  // …<br>}<br> <code>`</code></p>
+<ol start="5">
+<li>由上述代码以及注释可以发现如果删除一个 collection 的 index 的话，会同时 invalidateAll cursors，可以尝试通过该手段去验证是否会报 cursor not found 错误</li>
+</ol>
+</li>
+<li><p>类似的复现方法</p>
+<ul>
+<li>写一段代码获取某 collection 的 curosr, 迭代该 cursor, 并在每次迭代中 sleep 1 秒</li>
+<li>在另外的 session 中开一个 mongo shell，并在其中创建然后删除该 collection 下的 index</li>
+<li>可以发现我们的模拟代码会抛出 cursor not found 的错误</li>
+<li><img src="/images/20190222-183300.png" alt=""></li>
+</ul>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>虽然能够复现出 cursor not found 的问题，但是跟实际上的日志错误还是有一定差别的，实际的日志错误是带有 namespace 等信息的，但是在我们的复现路径中并不能看见如此信息。</li>
+<li>从代码实现以及注释上看，导致实际的 cursor not found 的原因极可能由于 curosr manager 对 cursor 的 “粗粒度” 管理导致的</li>
+<li>至于最后的解决方案: 可以通过 try catch retry 的方式去对实际业务代码进行相对应的改造修复</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://memos.ml/2018/12/22/general-cache-layer/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -662,7 +828,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -684,7 +850,7 @@
               
               <div class="site-state-item site-state-tags">
                 
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">标签</span>
                 
               </div>
@@ -721,7 +887,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
