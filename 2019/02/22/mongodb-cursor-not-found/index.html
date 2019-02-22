@@ -79,19 +79,19 @@
 
 
 
-<meta name="description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: 12345678910111213141516171819202122Cursor not found (namespace: &amp;apos;db_name.collection_name&amp;apos;, id: cursor_id).```，频率大概是 3">
+<meta name="description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: Cursor not found (namespace: ‘db_name.collection_name’, id: cursor_id). 频率大概是 3次/天    依赖信息 mongodb (cmongo: v3.2), 在腾讯云上以副本集方式部">
 <meta name="keywords" content="mongodb,cursor">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Mongodb Cursor Not Found">
 <meta property="og:url" content="http://memos.ml/2019/02/22/mongodb-cursor-not-found/index.html">
 <meta property="og:site_name" content="KeepGoing">
-<meta property="og:description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: 12345678910111213141516171819202122Cursor not found (namespace: &amp;apos;db_name.collection_name&amp;apos;, id: cursor_id).```，频率大概是 3">
+<meta property="og:description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: Cursor not found (namespace: ‘db_name.collection_name’, id: cursor_id). 频率大概是 3次/天    依赖信息 mongodb (cmongo: v3.2), 在腾讯云上以副本集方式部">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://memos.ml/images/20190222-183300.png">
-<meta property="og:updated_time" content="2019-02-22T10:42:57.000Z">
+<meta property="og:updated_time" content="2019-02-22T10:58:07.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Mongodb Cursor Not Found">
-<meta name="twitter:description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: 12345678910111213141516171819202122Cursor not found (namespace: &amp;apos;db_name.collection_name&amp;apos;, id: cursor_id).```，频率大概是 3">
+<meta name="twitter:description" content="在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题: Cursor not found (namespace: ‘db_name.collection_name’, id: cursor_id). 频率大概是 3次/天    依赖信息 mongodb (cmongo: v3.2), 在腾讯云上以副本集方式部">
 <meta name="twitter:image" content="http://memos.ml/images/20190222-183300.png">
 
 
@@ -335,17 +335,45 @@
 
       
         <ul>
-<li><p>在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Cursor not found (namespace: &apos;db_name.collection_name&apos;, id: cursor_id).</span><br><span class="line">```，频率大概是 3次/天</span><br><span class="line"></span><br><span class="line">## 依赖信息</span><br><span class="line">* mongodb (cmongo: v3.2), 在腾讯云上以副本集方式部署</span><br><span class="line"></span><br><span class="line">* python 模拟业务代码一份</span><br><span class="line"></span><br><span class="line">## 问题分析</span><br><span class="line">* google 关键词</span><br><span class="line">   - 关键词: mongodb cursor not found</span><br><span class="line">   - link: [Stackoverflow](https://stackoverflow.com/questions/44248108/mongodb-error-getmore-command-failed-cursor-not-found &quot;node.js - MongoDB - Error: getMore command failed: Cursor not found - Stack Overflow&quot;)</span><br><span class="line">   - 概要: 大部分描述是由于 timeout 导致的，timeout 默认时间大概是 10 分钟</span><br><span class="line">   - 现象分析: 由于模拟的业务代码里是 delete 操作而且从数据量上分析，要 cursor 超过 10 分钟的概率非常小，暂时摒弃从 timeout 上分析的路径</span><br><span class="line">   - 附上一个(v 3.6+)相关 Jira 链接 [Jira](https://jira.mongodb.org/browse/SERVER-34810)，大概讲了 cache refresh 导致 cursor 被清掉了, 这个挺靠谱的</span><br><span class="line"></span><br><span class="line">* 下载源码 mongodb (v3.2) 分析</span><br><span class="line">   1. 搜索 &quot;cursor not found&quot; 关键字</span><br><span class="line">      - 找到对应的源码文件在 cluster\_cursor\_manager.cpp 中，由 &quot;cursorNotFoundStatus&quot; 定义。这个错误可以由 killCursor，detachCursor_inlock，checkOutCursor等函数抛出，从该源文件看，该类型错误可能由 集群关闭 / cursor没有注册成功 / cursor处于 kill pending(如: timeout) 等原因状态导致</span><br><span class="line">   2. 由于腾讯云的监控显示在 cursor not found 出现的时候集群状态是正常的， 所以犹豫集群关闭导致的可能性不大</span><br><span class="line">   3. 从 cluster\_cursor\_manager.cpp 中可以看出 cursor 是由 cursor\_manager 管理的, 在 cursor\_manager.cpp 文件中可以找到 timeoutCursors，eraseCursor，invalidateAll 等相关方法</span><br><span class="line">   4. 全局搜索与 cursor\_manager 相关的 invalidateAll 方法，可以在 index\_catalog.cpp 中找到相关的代码</span><br></pre></td></tr></table></figure>
-<p> Status IndexCatalog::_dropIndex(OperationContext<em> txn, IndexCatalogEntry</em> entry) {<br>  // …<br>  // TODO only kill cursors that are actually using the index rather than everything on this<br>  // collection.<br>  if (entry-&gt;isReady(txn)) {</p>
-<pre><code>_collection-&gt;getCursorManager()-&gt;invalidateAll(
-    false, str::stream() &lt;&lt; &quot;index &apos;&quot; &lt;&lt; indexName &lt;&lt; &quot;&apos; dropped&quot;);
-</code></pre><p>  }<br>  // …<br>}<br> <code>`</code></p>
-<ol start="5">
-<li>由上述代码以及注释可以发现如果删除一个 collection 的 index 的话，会同时 invalidateAll cursors，可以尝试通过该手段去验证是否会报 cursor not found 错误</li>
+<li>在个人的私有项目实践中，使用了腾讯云的 cmongo (base on mongodb v3.2)，在端详日志的时候，发现偶尔会出现下述问题:<ul>
+<li>Cursor not found (namespace: ‘db_name.collection_name’, id: cursor_id).</li>
+<li>频率大概是 3次/天</li>
+</ul>
+</li>
+</ul>
+<h2 id="依赖信息"><a href="#依赖信息" class="headerlink" title="依赖信息"></a>依赖信息</h2><ul>
+<li><p>mongodb (cmongo: v3.2), 在腾讯云上以副本集方式部署</p>
+</li>
+<li><p>python 模拟业务代码一份</p>
+</li>
+</ul>
+<h2 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h2><ul>
+<li><p>google 关键词</p>
+<ul>
+<li>关键词: mongodb cursor not found</li>
+<li>link: <a href="https://stackoverflow.com/questions/44248108/mongodb-error-getmore-command-failed-cursor-not-found" target="_blank" rel="noopener">MongoDB - Error: getMore command failed: Cursor not found
+</a></li>
+<li>概要: 大部分描述是由于 timeout 导致的，timeout 默认时间大概是 10 分钟</li>
+<li>现象分析: 由于模拟的业务代码里是 delete 操作而且从数据量上分析，要 cursor 超过 10 分钟的概率非常小，暂时摒弃从 timeout 上分析的路径</li>
+<li>附上一个 (v 3.6+) 相关 Jira 链接 <a href="https://jira.mongodb.org/browse/SERVER-34810" target="_blank" rel="noopener">Session cache refresh can erroneously kill cursors that are still in use</a>，大概讲了 cache refresh 导致 cursor 被清掉了, 这个挺靠谱的</li>
+</ul>
+</li>
+<li><p>下载源码 mongodb (v3.2) 分析</p>
+<ol>
+<li>搜索 “cursor not found” 关键字<ul>
+<li>找到对应的源码文件在 cluster_cursor_manager.cpp 中，由 “cursorNotFoundStatus” 定义。这个错误可以由 killCursor，detachCursor_inlock，checkOutCursor等函数抛出，从该源文件看，该类型错误可能由 集群关闭 / cursor没有注册成功 / cursor处于 kill pending(如: timeout) 等原因状态导致</li>
+</ul>
+</li>
+<li>由于腾讯云的监控显示在 cursor not found 出现的时候集群状态是正常的， 所以由于集群关闭导致的可能性不大</li>
+<li>从 cluster_cursor_manager.cpp 中可以看出 cursor 是由 cursor_manager 管理的, 在 cursor_manager.cpp 文件中可以找到 timeoutCursors，eraseCursor，invalidateAll 等相关方法</li>
+<li><p>全局搜索与 cursor_manager 相关的 invalidateAll 方法，可以在 index_catalog.cpp 中找到相关的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Status IndexCatalog::_dropIndex(OperationContext* txn, IndexCatalogEntry* entry) &#123;</span><br><span class="line">  // ...</span><br><span class="line">  // TODO only kill cursors that are actually using the index rather than everything on this</span><br><span class="line">  // collection.</span><br><span class="line">  if (entry-&gt;isReady(txn)) &#123;</span><br><span class="line">      _collection-&gt;getCursorManager()-&gt;invalidateAll(</span><br><span class="line">          false, str::stream() &lt;&lt; &quot;index &apos;&quot; &lt;&lt; indexName &lt;&lt; &quot;&apos; dropped&quot;);</span><br><span class="line">  &#125;</span><br><span class="line">  // ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>由上述代码以及注释可以发现如果删除一个 collection 的 index 的话，会同时 invalidateAll cursors，可以尝试通过该手段去验证是否会报 cursor not found 错误</p>
+</li>
 </ol>
 </li>
-<li><p>类似的复现方法</p>
+<li><p>复现方法</p>
 <ul>
 <li>写一段代码获取某 collection 的 curosr, 迭代该 cursor, 并在每次迭代中 sleep 1 秒</li>
 <li>在另外的 session 中开一个 mongo shell，并在其中创建然后删除该 collection 下的 index</li>
@@ -538,7 +566,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.</span> <span class="nav-text">总结</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#依赖信息"><span class="nav-number">1.</span> <span class="nav-text">依赖信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题分析"><span class="nav-number">2.</span> <span class="nav-text">问题分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>
